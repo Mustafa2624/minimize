@@ -403,7 +403,7 @@ Item {
             }
         } else if (action === "hide-move" || action === "restore-move") {
             let exitKind = action === "hide-move" ? "hide" : "restore"
-            Qt.callLater(function() { root.finishPeekExit(exitKind) })
+            Qt.callLater(function() { root.runPeekToggle(exitKind + "-toggle") })
         } else if (action === "hide-resize" || action === "restore-resize") {
             let resizeKind = action === "hide-resize" ? "hide" : "restore"
             Qt.callLater(function() { root.finishPeekResize(resizeKind) })
