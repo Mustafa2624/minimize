@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import "../../../reusables"
 import "../../../"
 
@@ -51,11 +52,15 @@ Item {
     property var pendingCloseToplevel: null
     readonly property bool peekTransitionRunning: peekProcess.running || peekVisibilityProcess.running
 
-    property bool showLayout: false
+    property bool showLayout: true
     Timer {
-        running: root.moduleActive && barWindow && barWindow.isStartupReady && barWindow.isDataReady
+        id: startupFallbackTimer
         interval: 100
+        running: !root.showLayout
         onTriggered: root.showLayout = true
+    }
+    Component.onCompleted: {
+        root.showLayout = true
     }
 
     property int modelRevision: 0
@@ -592,12 +597,12 @@ Item {
                             sourceSize.height: height * Screen.devicePixelRatio
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
-                            visible: status === Image.Ready && source.toString() !== ""
+                            visible: status !== Image.Error && source.toString() !== ""
                         }
 
                         Text {
                             anchors.centerIn: parent
-                            visible: appIcon.status !== Image.Ready || appIcon.source.toString() === ""
+                            visible: appIcon.status === Image.Error || appIcon.source.toString() === ""
                             text: root.windowInitial(chip.modelData)
                             color: ThemeBackend.text
                             font.family: ThemeBackend.fontFamily
@@ -630,12 +635,12 @@ Item {
                         sourceSize.height: height * Screen.devicePixelRatio
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
-                        visible: status === Image.Ready && source.toString() !== ""
+                        visible: status !== Image.Error && source.toString() !== ""
                     }
 
                     Text {
                         anchors.centerIn: parent
-                        visible: vertIcon.status !== Image.Ready || vertIcon.source.toString() === ""
+                        visible: vertIcon.status === Image.Error || vertIcon.source.toString() === ""
                         text: root.windowInitial(chip.modelData)
                         color: ThemeBackend.text
                         font.family: ThemeBackend.fontFamily
