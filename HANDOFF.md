@@ -24,7 +24,7 @@ Provide two Hyprland shortcuts for the minimize face:
 
 ## Approved edits outside this repository
 
-- `/home/zain/.config/hypr/config/keybinds.lua`: insert two `hl.bind` blocks immediately after current line 144 (the existing Quicklayout toggle bind):
+- `/home/zain/.config/hypr/config/keybinds.lua`: inserted two `hl.bind` blocks at lines 146–158, immediately after the existing Quicklayout toggle bind at lines 139–144:
   - `ALT + M` invokes `qs -p /home/zain/.local/share/serpantinum/src/quickshell/Shell.qml ipc call minimize minimize`.
   - `mainMod + ALT + M` invokes `qs -p /home/zain/.local/share/serpantinum/src/quickshell/Shell.qml ipc call minimize toggleOverview`.
 
@@ -34,13 +34,13 @@ Provide two Hyprland shortcuts for the minimize face:
 - [x] Step 1 — Add the local grid helper and minimized-window overview component; `qmlformat` parsing and `qmllint -I . MinimizedOverview.qml` pass. Live test after Step 2: open the overview and verify wallpaper background, minimized-only cards, arrows, Enter, `1`–`9`, Escape, and backdrop dismissal; commit and push.
 - [x] Step 2 — Integrate overview state, wallpaper snapshot selection, minimized-only filtering, remembered-workspace restoration, and focused-monitor ownership in `MinimizeFace.qml`; `qmlformat`, `qmllint -I .`, and `git diff --check` pass. Live test after Step 3: run the IPC toggle on each monitor, confirm the overlay appears only on the focused monitor over wallpaper, then select a card and verify its remembered-workspace restore; commit and push.
 - [x] Step 3 — Add the focused-monitor-gated `minimize` IPC handler; `qmlformat`, `qmllint -I .`, `git diff --check`, and `qs … ipc call --help` pass. Live test after reload: `qs -p /home/zain/.local/share/serpantinum/src/quickshell/Shell.qml ipc call minimize minimize`, then `… ipc call minimize toggleOverview`; only the focused monitor must respond; commit and push.
-- [ ] Step 4 — Add the two approved Hyprland bindings at `/home/zain/.config/hypr/config/keybinds.lua`; validate Lua syntax/config reload instructions; commit the handoff update and push the repository branch.
+- [x] Step 4 — Add the two approved Hyprland bindings at `/home/zain/.config/hypr/config/keybinds.lua:146-158`; `luac -p` passes. The configuration directory is not a Git repository, so the external edit has no separate commit; this handoff update records it and is committed/pushed from this repository.
 - [ ] Step 5 — Run the complete static review, record required live-session checks, and finalize this handoff; commit and push.
 
 ## Current step
 
-Step 3 implementation is committed and pushed as `9e86dde`. This handoff update is the remaining Step 3 commit.
+Step 4 is complete outside the repository. `luac -p /home/zain/.config/hypr/config/keybinds.lua` passes; this handoff update is its repository checkpoint.
 
 ## Next step
 
-After this handoff update is committed and pushed, implement Step 4 only: add the two approved `hl.bind` blocks immediately after line 144 in `/home/zain/.config/hypr/config/keybinds.lua`. Do not otherwise change the configuration file.
+After this handoff update is committed and pushed, perform Step 5 only: final static review and a recorded live-session test procedure. Do not make further feature changes unless the review identifies a verified defect.
