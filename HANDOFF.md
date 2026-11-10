@@ -35,12 +35,20 @@ Provide two Hyprland shortcuts for the minimize face:
 - [x] Step 2 — Integrate overview state, wallpaper snapshot selection, minimized-only filtering, remembered-workspace restoration, and focused-monitor ownership in `MinimizeFace.qml`; `qmlformat`, `qmllint -I .`, and `git diff --check` pass. Live test after Step 3: run the IPC toggle on each monitor, confirm the overlay appears only on the focused monitor over wallpaper, then select a card and verify its remembered-workspace restore; commit and push.
 - [x] Step 3 — Add the focused-monitor-gated `minimize` IPC handler; `qmlformat`, `qmllint -I .`, `git diff --check`, and `qs … ipc call --help` pass. Live test after reload: `qs -p /home/zain/.local/share/serpantinum/src/quickshell/Shell.qml ipc call minimize minimize`, then `… ipc call minimize toggleOverview`; only the focused monitor must respond; commit and push.
 - [x] Step 4 — Add the two approved Hyprland bindings at `/home/zain/.config/hypr/config/keybinds.lua:146-158`; `luac -p` passes. The configuration directory is not a Git repository, so the external edit has no separate commit; this handoff update records it and is committed/pushed from this repository.
-- [ ] Step 5 — Run the complete static review, record required live-session checks, and finalize this handoff; commit and push.
+- [x] Step 5 — Final static review passes: `qmlformat` parses both QML files and the helper; `qmllint -I . MinimizeFace.qml MinimizedOverview.qml`, `luac -p /home/zain/.config/hypr/config/keybinds.lua`, and `git diff --check` pass. No verified defects found; this final handoff checkpoint is committed and pushed.
 
 ## Current step
 
-Step 4 is complete outside the repository. `luac -p /home/zain/.config/hypr/config/keybinds.lua` passes; this handoff update is its repository checkpoint.
+Implementation is complete. The repository is clean on `codex-feature`; the latest implementation and handoff checkpoint commits are pushed to `origin/codex-feature`.
 
 ## Next step
 
-After this handoff update is committed and pushed, perform Step 5 only: final static review and a recorded live-session test procedure. Do not make further feature changes unless the review identifies a verified defect.
+Run the live acceptance test after reloading the active Quickshell/Hyprland configuration:
+
+1. Focus a normal window and press `Alt+M`; it must move to the minimize bar.
+2. Invoke `Super+Alt+M`; the overview must appear only on the focused monitor, over wallpaper rather than the focused window, and list only shelf-minimized windows.
+3. Restore an overview card by click, Enter, and a number key; each window must return to its remembered workspace.
+4. Confirm `Super+Alt+M`, Escape, and a backdrop click each close the overview without restoring a window.
+5. On a multi-monitor setup, repeat steps 1–4 after moving focus to each monitor; exactly one bar instance must handle each shortcut.
+
+If a live check fails, start from this file and make a new small, independently tested step; do not modify the approved Hyprland binding block unless the failure is binding-specific.
