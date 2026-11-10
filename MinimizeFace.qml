@@ -35,8 +35,6 @@ Item {
 
     readonly property int peekWidth: Math.max(px(320), 960)
     readonly property int peekHeight: Math.max(px(240), 640)
-    readonly property int previewFixedX: 1187
-    readonly property int previewFixedY: 144
 
     property var peekToplevel: null
     property var pendingPeekToplevel: null
@@ -48,8 +46,6 @@ Item {
     property var peekOriginalPosition: null
     property int peekTargetWidth: 0
     property int peekTargetHeight: 0
-    property bool previewClosePending: false
-    property var pendingCloseToplevel: null
     readonly property bool peekTransitionRunning: peekProcess.running || peekVisibilityProcess.running
 
     property bool showLayout: true
@@ -106,7 +102,7 @@ Item {
         let vals = Hyprland.toplevels.values
         for (let i = 0; i < vals.length; i++) {
             let t = vals[i]
-            if (root.isMinimized(t)) {
+            if (root.isManaged(t)) {
                 out.push(t)
             }
         }
@@ -179,6 +175,14 @@ Item {
             + ", relative = false, window = " + JSON.stringify("address:" + address) + " })"
     }
 
+    function windowCenterRequest(t) {
+        let address = normalizedAddress(t ? t.address : "")
+        if (!address) return ""
+        if (typeof Hyprland !== "undefined" && Hyprland.usingLua === false)
+            return "centerwindow"
+        return "hl.dsp.window.center({ window = " + JSON.stringify("address:" + address) + " })"
+    }
+
     function fullscreenRequest(t, mode) {
         let address = normalizedAddress(t ? t.address : "")
         if (!address || mode <= 0) return ""
@@ -187,6 +191,17 @@ Item {
         let kind = mode === 1 ? "maximized" : "fullscreen"
         return "hl.dsp.window.fullscreen({ mode = " + JSON.stringify(kind)
             + ", window = " + JSON.stringify("address:" + address) + " })"
+    }
+
+    function currentWorkspaceName() {
+        // Hyprland never reports a special workspace as a monitor's activeWorkspace,
+        // while focusedWorkspace can point at one while a stored window has focus.
+        let mon = (typeof Hyprland !== "undefined" && Hyprland.focusedMonitor) ? Hyprland.focusedMonitor : null
+        let ws = (mon && mon.activeWorkspace) ? mon.activeWorkspace
+            : ((typeof Hyprland !== "undefined") ? Hyprland.focusedWorkspace : null)
+        if (!ws || !ws.name) return ""
+        let name = String(ws.name)
+        return name.indexOf("special:") === 0 ? "" : name
     }
 
     function moveWindow(t, workspace, follow) {
@@ -209,16 +224,15 @@ Item {
     }
 
     function restore(t) {
-        let workspace = (typeof Hyprland !== "undefined") ? Hyprland.focusedWorkspace : null
         const addr = normalizedAddress(t ? t.address : "")
-        let destination = minimizedOrigins[addr] || (workspace && String(workspace.name).indexOf("special:") !== 0
-            ? workspace.name : peekOriginWorkspace) || "1"
-        if (isMinimized(t)) {
+        let destination = minimizedOrigins[addr] || currentWorkspaceName() || peekOriginWorkspace || "1"
+        if (isMinimized(t) || isPeeked(t)) {
             delete minimizedOrigins[addr]
             minimizedOrigins = Object.assign({}, minimizedOrigins)
         }
         if (peekToplevel === t || isPeeked(t)) {
             if (peekTransitionRunning) return
+            adoptPeekTarget(t)
             peekVisible = false
             runPeekCommand(["hyprctl", "dispatch", moveRequest(t, destination, true)], "restore-move")
         } else {
@@ -235,6 +249,21 @@ Item {
         return true
     }
 
+    function adoptPeekTarget(t) {
+        if (peekToplevel || !t) return
+        // The shell restarted while a window was parked in the peek workspace, so
+        // no show state was captured. Reconstruct enough state to exit cleanly:
+        // tile it back onto the shelf and let the visibility check close the
+        // workspace if it is still open.
+        peekToplevel = t
+        peekWasFloating = false
+        peekOriginalFullscreen = 0
+        peekOriginalSize = null
+        peekOriginalPosition = null
+        peekTargetWidth = peekWidth
+        peekTargetHeight = peekHeight
+    }
+
     function togglePeek(t) {
         if (!t || peekTransitionRunning) return
         if (peekToplevel === t || isPeeked(t)) {
@@ -246,10 +275,10 @@ Item {
             closePeek(peekToplevel)
             return
         }
-        let workspace = (typeof Hyprland !== "undefined") ? Hyprland.focusedWorkspace : null
-        if (!workspace || String(workspace.name).indexOf("special:") === 0) return
+        let originWorkspace = currentWorkspaceName()
+        if (!originWorkspace) return
         peekToplevel = t
-        peekOriginWorkspace = workspace.name
+        peekOriginWorkspace = originWorkspace
         peekVisible = false
         let ipc = t.lastIpcObject || null
         peekWasFloating = !!(ipc && ipc.floating)
@@ -263,12 +292,8 @@ Item {
 
     function closePeek(t) {
         let target = t || peekToplevel
-        if (!target) return
-        if (peekTransitionRunning) {
-            pendingCloseToplevel = target
-            return
-        }
-        pendingCloseToplevel = null
+        if (!target || peekTransitionRunning) return
+        adoptPeekTarget(target)
         peekVisible = false
         runPeekCommand(["hyprctl", "dispatch", moveRequest(target, shelfWorkspace, false)], "hide-move")
     }
@@ -283,7 +308,6 @@ Item {
         peekOriginalPosition = null
         peekTargetWidth = 0
         peekTargetHeight = 0
-        pendingCloseToplevel = null
     }
 
     function runPeekToggle(action) {
@@ -390,20 +414,15 @@ Item {
             })
         } else if (action === "show-resize") {
             Qt.callLater(function() {
-                root.runPeekCommand(["hyprctl", "dispatch", root.positionRequest(root.peekToplevel, root.previewFixedX, root.previewFixedY)], "show-position")
+                root.runPeekCommand(["hyprctl", "dispatch", root.windowCenterRequest(root.peekToplevel)], "show-center")
             })
-        } else if (action === "show-position") {
+        } else if (action === "show-center") {
             Qt.callLater(function() { root.runPeekToggle("show-toggle") })
         } else if (action === "show-toggle") {
             peekVisible = true
-            if (pendingCloseToplevel) {
-                let target = pendingCloseToplevel
-                pendingCloseToplevel = null
-                Qt.callLater(function() { root.closePeek(target) })
-            }
         } else if (action === "hide-move" || action === "restore-move") {
             let exitKind = action === "hide-move" ? "hide" : "restore"
-            Qt.callLater(function() { root.runPeekToggle(exitKind + "-toggle") })
+            Qt.callLater(function() { root.finishPeekExit(exitKind) })
         } else if (action === "hide-resize" || action === "restore-resize") {
             let resizeKind = action === "hide-resize" ? "hide" : "restore"
             Qt.callLater(function() { root.finishPeekResize(resizeKind) })
@@ -416,6 +435,25 @@ Item {
             Qt.callLater(function() { root.runPeekVisibilityCheck(fullscreenKind) })
         } else if (action === "hide-toggle" || action === "restore-toggle") {
             finalizePeek()
+        } else if (action === "external-toggle") {
+            finalizePeek()
+        }
+    }
+
+    onMinimizedWindowsChanged: {
+        if (!peekToplevel) {
+            // A tracked Peek target was destroyed (closed externally), which nulls
+            // the reference before the checks below can run.
+            if (peekVisible) clearPeekState()
+            return
+        }
+        if (!peekTransitionRunning && peekVisible
+                && (!isManaged(peekToplevel) || !isPeeked(peekToplevel))) {
+            peekVisible = false
+            if (isMinimized(peekToplevel)) finishPeekExit("hide")
+            else runPeekVisibilityCheck("external")
+        } else if (!isManaged(peekToplevel) && !peekTransitionRunning) {
+            clearPeekState()
         }
     }
 
