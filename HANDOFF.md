@@ -32,15 +32,15 @@ Provide two Hyprland shortcuts for the minimize face:
 
 - [x] Step 0 — Record the approved plan in this handoff file; commit and push it.
 - [x] Step 1 — Add the local grid helper and minimized-window overview component; `qmlformat` parsing and `qmllint -I . MinimizedOverview.qml` pass. Live test after Step 2: open the overview and verify wallpaper background, minimized-only cards, arrows, Enter, `1`–`9`, Escape, and backdrop dismissal; commit and push.
-- [ ] Step 2 — Integrate overview state, wallpaper selection, filtering, restoration, and focused-monitor ownership in `MinimizeFace.qml`; statically validate imports/references and document the live behavior test; commit and push.
+- [x] Step 2 — Integrate overview state, wallpaper snapshot selection, minimized-only filtering, remembered-workspace restoration, and focused-monitor ownership in `MinimizeFace.qml`; `qmlformat`, `qmllint -I .`, and `git diff --check` pass. Live test after Step 3: run the IPC toggle on each monitor, confirm the overlay appears only on the focused monitor over wallpaper, then select a card and verify its remembered-workspace restore; commit and push.
 - [ ] Step 3 — Add the minimize IPC handler, verify it preserves existing minimize behavior, and document the IPC command test; commit and push.
 - [ ] Step 4 — Add the two approved Hyprland bindings at `/home/zain/.config/hypr/config/keybinds.lua`; validate Lua syntax/config reload instructions; commit the handoff update and push the repository branch.
 - [ ] Step 5 — Run the complete static review, record required live-session checks, and finalize this handoff; commit and push.
 
 ## Current step
 
-Step 1 implementation is committed and pushed as `463475a`. This handoff update is the remaining Step 1 commit.
+Step 2 implementation is committed and pushed as `51b74ea`. This handoff update is the remaining Step 2 commit.
 
 ## Next step
 
-After this handoff update is committed and pushed, implement Step 2 only: wire the overview into `MinimizeFace.qml`, including wallpaper source, minimized-only filtering, restoration, and focused-monitor ownership. Do not add IPC bindings yet.
+After this handoff update is committed and pushed, implement Step 3 only: add the `minimize` IPC handler in `MinimizeFace.qml`, guarded so only the focused-monitor face responds. Do not edit Hyprland bindings yet.
