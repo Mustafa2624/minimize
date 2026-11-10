@@ -67,6 +67,11 @@ Item {
                 onActivated: overview.close()
             }
 
+            Rectangle {
+                anchors.fill: parent
+                color: ThemeBackend.base
+            }
+
             Image {
                 anchors.fill: parent
                 source: root.wallpaperSource

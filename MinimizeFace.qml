@@ -21,6 +21,9 @@ Item {
         : "horizontal"
     readonly property bool isVertical: orientation === "vertical"
     readonly property bool moduleActive: module ? module.moduleActive : true
+    readonly property string barScreenName: (barWindow && barWindow.screen && barWindow.screen.name)
+        ? String(barWindow.screen.name)
+        : ""
 
     function px(value) {
         return barWindow && typeof barWindow.s === "function"
@@ -32,6 +35,7 @@ Item {
     readonly property string peekWorkspace: "special:omarchy-window-peek"
 
     property var minimizedOrigins: ({})
+    property bool overviewOpen: false
 
     readonly property int peekWidth: Math.max(px(320), 960)
     readonly property int peekHeight: Math.max(px(240), 640)
@@ -109,10 +113,26 @@ Item {
         return out
     }
 
+    readonly property var overviewWindows: {
+        let rev = root.modelRevision
+        let out = []
+        if (typeof Hyprland === "undefined" || !Hyprland.toplevels || !Hyprland.toplevels.values) return out
+        let vals = Hyprland.toplevels.values
+        for (let i = 0; i < vals.length; i++) {
+            if (root.isMinimized(vals[i])) out.push(vals[i])
+        }
+        return out
+    }
+
     readonly property var activeWindow: (typeof Hyprland !== "undefined") ? Hyprland.activeToplevel : null
     readonly property bool canMinimize: activeWindow !== null
         && activeWindow.workspace !== null
         && !isManaged(activeWindow)
+
+    readonly property bool ownsFocusedMonitor: {
+        let monitor = (typeof Hyprland !== "undefined") ? Hyprland.focusedMonitor : null
+        return !!(barScreenName && monitor && monitor.name && String(monitor.name) === barScreenName)
+    }
 
     function normalizedAddress(addr) {
         if (!addr) return ""
@@ -221,6 +241,38 @@ Item {
             minimizedOrigins = Object.assign({}, minimizedOrigins)
         }
         moveWindow(t, shelfWorkspace, false)
+    }
+
+    function overviewWallpaperSource() {
+        if (!barScreenName) return ""
+        if (typeof Caching !== "undefined" && typeof Caching.getCacheDir === "function") {
+            return "file://" + Caching.getCacheDir("wallpaper")
+                + "/current_wallpaper_" + barScreenName + ".png"
+        }
+        let wallpaper = (typeof Wallpaper !== "undefined" && typeof Wallpaper.getWallpaperPath === "function")
+            ? Wallpaper.getWallpaperPath(barScreenName)
+            : ""
+        if (!wallpaper) return ""
+        return wallpaper.indexOf("file://") === 0 ? wallpaper : "file://" + wallpaper
+    }
+
+    function toggleOverview() {
+        if (!ownsFocusedMonitor) return
+        overviewOpen = !overviewOpen
+        if (overviewOpen) refreshTimer.restart()
+    }
+
+    function closeOverview() {
+        overviewOpen = false
+    }
+
+    function restoreFromOverview(t) {
+        closeOverview()
+        Qt.callLater(function() { root.restore(t) })
+    }
+
+    onModuleActiveChanged: {
+        if (!moduleActive) closeOverview()
     }
 
     function restore(t) {
@@ -702,6 +754,19 @@ Item {
                 }
             }
         }
+    }
+
+    MinimizedOverview {
+        open: root.overviewOpen && root.moduleActive
+        targetScreen: root.barWindow ? root.barWindow.screen : null
+        toplevels: root.overviewWindows
+        wallpaperSource: root.overviewWallpaperSource()
+        iconSourceFor: root.windowIcon
+        titleFor: root.windowTitle
+        initialFor: root.windowInitial
+        px: root.px
+        onCloseRequested: root.closeOverview()
+        onRestoreRequested: function(toplevel) { root.restoreFromOverview(toplevel) }
     }
 
     Process {
