@@ -99,6 +99,18 @@ Item {
         }
     }
 
+    IpcHandler {
+        target: "minimize"
+
+        function minimize() {
+            if (root.ownsFocusedMonitor) root.minimizeActive()
+        }
+
+        function toggleOverview() {
+            if (root.ownsFocusedMonitor) root.toggleOverview()
+        }
+    }
+
     readonly property var minimizedWindows: {
         let rev = root.modelRevision
         let out = []
