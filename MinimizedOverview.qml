@@ -16,11 +16,22 @@ Item {
     property var titleFor: function(toplevel) { return "Window" }
     property var initialFor: function(toplevel) { return "W" }
     property var px: function(value) { return value }
+    property int selectedIndex: -1
 
     signal closeRequested()
     signal restoreRequested(var toplevel)
+    signal closeWindowRequested(var toplevel)
 
     readonly property real labelHeight: px(30)
+
+    function closeSelectedWindow() {
+        if (selectedIndex >= 0 && selectedIndex < toplevels.length)
+            closeWindowRequested(toplevels[selectedIndex])
+    }
+
+    onOpenChanged: {
+        if (!open) selectedIndex = -1
+    }
 
     LazyLoader {
         active: root.open && root.targetScreen !== null
@@ -36,7 +47,8 @@ Item {
             exclusionMode: ExclusionMode.Ignore
             anchors { top: true; bottom: true; left: true; right: true }
 
-            property int current: -1
+            property int current: root.selectedIndex
+            onCurrentChanged: root.selectedIndex = current
             property var gridLayout: ScreenLayout.fit(
                 root.toplevels,
                 width - root.px(68),

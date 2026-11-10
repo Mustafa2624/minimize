@@ -109,6 +109,10 @@ Item {
         function toggleOverview() {
             if (root.ownsFocusedMonitor) root.toggleOverview()
         }
+
+        function closeFocusedWindow() {
+            if (root.ownsFocusedMonitor) root.closeFocusedWindow()
+        }
     }
 
     readonly property var minimizedWindows: {
@@ -281,6 +285,26 @@ Item {
     function restoreFromOverview(t) {
         closeOverview()
         Qt.callLater(function() { root.restore(t) })
+    }
+
+    function closeFromOverview(t) {
+        let address = normalizedAddress(t ? t.address : "")
+        if (!address) return
+        let request
+        if (typeof Hyprland !== "undefined" && Hyprland.usingLua === false)
+            request = "closewindow " + address
+        else
+            request = "hl.dsp.window.close({ window = " + JSON.stringify("address:" + address) + " })"
+        Quickshell.execDetached(["hyprctl", "dispatch", request])
+        refreshTimer.restart()
+    }
+
+    function closeFocusedWindow() {
+        if (overviewOpen) {
+            minimizedOverview.closeSelectedWindow()
+            return
+        }
+        closeFromOverview(activeWindow)
     }
 
     onModuleActiveChanged: {
@@ -769,6 +793,7 @@ Item {
     }
 
     MinimizedOverview {
+        id: minimizedOverview
         open: root.overviewOpen && root.moduleActive
         targetScreen: root.barWindow ? root.barWindow.screen : null
         toplevels: root.overviewWindows
@@ -779,6 +804,7 @@ Item {
         px: root.px
         onCloseRequested: root.closeOverview()
         onRestoreRequested: function(toplevel) { root.restoreFromOverview(toplevel) }
+        onCloseWindowRequested: function(toplevel) { root.closeFromOverview(toplevel) }
     }
 
     Process {
