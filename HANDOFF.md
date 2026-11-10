@@ -21,12 +21,14 @@ Provide two Hyprland shortcuts for the minimize face:
 - `MinimizeFace.qml` — IPC actions, focused-monitor ownership, and overview integration.
 - `MinimizedOverview.qml` — full-screen minimized-window overview.
 - `ScreenLayout.js` — local grid sizing helper derived from the existing Expose layout algorithm.
+- `qmldir` — registers `MinimizedOverview` so the running face can load it.
 
 ## Approved edits outside this repository
 
 - `/home/zain/.config/hypr/config/keybinds.lua`: inserted two `hl.bind` blocks at lines 146–158, immediately after the existing Quicklayout toggle bind at lines 139–144:
   - `ALT + M` invokes `qs -p /home/zain/.local/share/serpantinum/src/quickshell/Shell.qml ipc call minimize minimize`.
   - `mainMod + ALT + M` invokes `qs -p /home/zain/.local/share/serpantinum/src/quickshell/Shell.qml ipc call minimize toggleOverview`.
+- `/home/zain/.config/hypr/config/keybinds.lua:29-34`: replaced the existing `mainMod + W` close dispatcher with `minimize closeFocusedWindow`. This closes the selected minimized-overview card when open and the active window otherwise.
 
 ## Checklist
 
@@ -39,7 +41,7 @@ Provide two Hyprland shortcuts for the minimize face:
 
 ## Current step
 
-Implementation is complete. The repository is clean on `codex-feature`; the latest implementation and handoff checkpoint commits are pushed to `origin/codex-feature`.
+The manifest fix is committed and pushed as `ed26011`. The `Super+W` minimized-preview close feature is committed and pushed as `a86d43c`. Quickshell and Hyprland were reloaded; the `minimize.closeFocusedWindow` IPC action returned `ok`, and Hyprland reports the updated `Super+W` `exec_cmd` binding.
 
 ## Next step
 
@@ -51,4 +53,4 @@ Run the live acceptance test after reloading the active Quickshell/Hyprland conf
 4. Confirm `Super+Alt+M`, Escape, and a backdrop click each close the overview without restoring a window.
 5. On a multi-monitor setup, repeat steps 1–4 after moving focus to each monitor; exactly one bar instance must handle each shortcut.
 
-If a live check fails, start from this file and make a new small, independently tested step; do not modify the approved Hyprland binding block unless the failure is binding-specific.
+Live check for `Super+W`: open the minimized overview, hover a card or select it with arrow keys, then press `Super+W`; only that minimized window should close. Outside the overview, `Super+W` closes the active window as before.
