@@ -41,7 +41,7 @@ Provide two Hyprland shortcuts for the minimize face:
 
 ## Current step
 
-The manifest fix is committed and pushed as `ed26011`. The `Super+W` minimized-preview close feature is committed and pushed as `a86d43c`. Quickshell and Hyprland were reloaded; the `minimize.closeFocusedWindow` IPC action returned `ok`, and Hyprland reports the updated `Super+W` `exec_cmd` binding.
+The manifest fix is committed and pushed as `ed26011`. The `Super+W` minimized-preview close feature is committed and pushed as `a86d43c`. Quickshell and Hyprland were reloaded; the `minimize.closeFocusedWindow` IPC action returned `ok`, and Hyprland reports the updated `Super+W` `exec_cmd` binding. The live module and `/home/zain/.config/serpantinum-custom/faces/minimize/` are byte-identical for all four runtime files.
 
 ## Next step
 
